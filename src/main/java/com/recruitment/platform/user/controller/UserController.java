@@ -1,5 +1,7 @@
 package com.recruitment.platform.user.controller;
 
+import com.recruitment.platform.user.dto.LoginRequest;
+import com.recruitment.platform.user.dto.LoginResponse;
 import com.recruitment.platform.user.dto.RegisterUserRequest;
 import com.recruitment.platform.user.dto.UserResponse;
 import com.recruitment.platform.user.service.UserService;
@@ -23,5 +25,14 @@ public class UserController {
 
         return userService.createUser(request);
     }
+
+    @PostMapping("/login")
+    @ResponseStatus(HttpStatus.OK)
+    public LoginResponse loginUser(
+            @Valid @RequestBody LoginRequest request) {
+
+        return userService.login(request);
+    }
+
 }
 

@@ -1,5 +1,8 @@
 package com.recruitment.platform.user.service;
 
+import com.recruitment.platform.security.JwtService;
+import com.recruitment.platform.user.dto.LoginRequest;
+import com.recruitment.platform.user.dto.LoginResponse;
 import com.recruitment.platform.user.dto.RegisterUserRequest;
 import com.recruitment.platform.user.dto.UserResponse;
 import com.recruitment.platform.user.entity.User;
@@ -22,6 +25,8 @@ public class UserService {
     private UserRepository userRepository;
     @Autowired
     private PasswordEncoder passwordEncoder;
+    @Autowired
+    private JwtService jwtService;
 
     public UserResponse createUser(RegisterUserRequest request){
         if(request.getRole()==null || request.getRole()==UserRole.ADMIN){
@@ -48,5 +53,30 @@ public class UserService {
         User savedUser = userRepository.save(user);
         return userMapper.toResponse(savedUser);
 
+    }
+
+    public LoginResponse login(LoginRequest request) {
+        String normalizedEmail = request.getEmail()
+                .trim()
+                .toLowerCase(Locale.ROOT);
+
+        User user = userRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED,
+                        "Invalid email or password"
+                ));
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Invalid email or password"
+            );
+        }
+
+        String token = jwtService.generateToken(user);
+
+        UserResponse userResponse = userMapper.toResponse(user);
+
+        return new LoginResponse(token, "Bearer", userResponse);
     }
 }
