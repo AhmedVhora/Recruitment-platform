@@ -1,12 +1,11 @@
 package com.recruitment.platform.user.controller;
 
-import com.recruitment.platform.user.dto.LoginRequest;
-import com.recruitment.platform.user.dto.LoginResponse;
-import com.recruitment.platform.user.dto.RegisterUserRequest;
-import com.recruitment.platform.user.dto.UserResponse;
+import com.recruitment.platform.user.dto.*;
+import com.recruitment.platform.user.entity.User;
 import com.recruitment.platform.user.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -34,5 +33,38 @@ public class UserController {
         return userService.login(request);
     }
 
+    @GetMapping("/me")
+    @ResponseStatus(HttpStatus.OK)
+    public UserResponse getCurrentUser(@AuthenticationPrincipal User user){
+        return userService.getCurrentUser(user);
+    }
+
+    @PatchMapping("/me")
+    @ResponseStatus(HttpStatus.OK)
+    public UserResponse updateCurrentUser(@AuthenticationPrincipal User user,
+                                          @RequestBody UpdateUserRequest request){
+        return userService.updateCurrentUser(user, request);
+    }
+
+    @PatchMapping("/me/password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void changePassword(@AuthenticationPrincipal User user,
+                               @Valid @RequestBody ChangePasswordRequest request){
+        userService.changePassword(user,request);
+    }
+
+    @DeleteMapping("/me")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteAccount(@AuthenticationPrincipal User user,
+                              @Valid @RequestBody DeleteAccountRequest request){
+        userService.deleteAccount(user,request);
+    }
+
+    @PostMapping("/logout")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void logout(@RequestHeader("Authorization") String authHeader){
+        String token =authHeader.substring(7).trim();
+        userService.logOut(token);
+    }
 }
 

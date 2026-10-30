@@ -20,13 +20,13 @@ import java.util.List;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+
+    private final TokenRevocationService tokenRevocationService;
     private final JwtService jwtService;
     private final UserRepository userRepository;
 
-    public JwtAuthenticationFilter(
-            JwtService jwtService,
-            UserRepository userRepository
-    ) {
+    public JwtAuthenticationFilter(TokenRevocationService tokenRevocationService, JwtService jwtService, UserRepository userRepository) {
+        this.tokenRevocationService = tokenRevocationService;
         this.jwtService = jwtService;
         this.userRepository = userRepository;
     }
@@ -66,6 +66,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         try {
+            String jti = jwtService.getJti(token);
+
+            if (tokenRevocationService.isTokenRevoked(jti)) {
+                response.sendError(
+                        HttpServletResponse.SC_UNAUTHORIZED,
+                        "Token has been revoked"
+                );
+                return;
+            }
             Long userId = jwtService.extractUserId(token);
 
             User user = userRepository.findById(userId)

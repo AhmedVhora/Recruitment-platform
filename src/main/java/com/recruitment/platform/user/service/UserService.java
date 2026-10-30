@@ -1,10 +1,8 @@
 package com.recruitment.platform.user.service;
 
 import com.recruitment.platform.security.JwtService;
-import com.recruitment.platform.user.dto.LoginRequest;
-import com.recruitment.platform.user.dto.LoginResponse;
-import com.recruitment.platform.user.dto.RegisterUserRequest;
-import com.recruitment.platform.user.dto.UserResponse;
+import com.recruitment.platform.security.TokenRevocationService;
+import com.recruitment.platform.user.dto.*;
 import com.recruitment.platform.user.entity.User;
 import com.recruitment.platform.user.entity.UserRole;
 import com.recruitment.platform.user.mapper.UserMapper;
@@ -27,6 +25,8 @@ public class UserService {
     private PasswordEncoder passwordEncoder;
     @Autowired
     private JwtService jwtService;
+    @Autowired
+    private TokenRevocationService tokenRevocationService;
 
     public UserResponse createUser(RegisterUserRequest request){
         if(request.getRole()==null || request.getRole()==UserRole.ADMIN){
@@ -79,4 +79,87 @@ public class UserService {
 
         return new LoginResponse(token, "Bearer", userResponse);
     }
+
+
+    public UserResponse getCurrentUser(User user){
+        return userMapper.toResponse(user);
+    }
+
+    public UserResponse updateCurrentUser(
+            User user,
+            UpdateUserRequest request) {
+
+
+        boolean changed = false;
+
+        if (request.getFullName() != null) {
+            String fullName = request.getFullName().trim();
+
+            if (fullName.isBlank()) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Full name cannot be blank"
+                );
+            }
+
+            if (!user.getFullName().equals(fullName)) {
+                user.setFullName(fullName);
+                changed = true;
+            }
+        }
+
+        if (request.getRole() != null) {
+            UserRole role = request.getRole();
+
+            if (role == UserRole.ADMIN) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "You cannot assign yourself the ADMIN role"
+                );
+            }
+
+            if (user.getRole() != role) {
+                user.setRole(role);
+                changed = true;
+            }
+        }
+
+        if (!changed) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "No changes provided"
+            );
+        }
+
+        User savedUser = userRepository.save(user);
+
+        return userMapper.toResponse(savedUser);
+    }
+
+    public void changePassword(User user,ChangePasswordRequest request){
+        String currentPassword = request.getCurrentPassword();
+        String newPassword = request.getNewPassword();
+        if(!passwordEncoder.matches(currentPassword,user.getPassword())){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Incorrect password");
+        }
+        if(passwordEncoder.matches(newPassword, user.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "New password cannot be the same as old password");
+        }
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+
+    public void deleteAccount(User user, DeleteAccountRequest request){
+        String password = request.getPassword();
+        if(!passwordEncoder.matches(password, user.getPassword())){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Incorrect password");
+        }
+
+        userRepository.delete(user);
+    }
+
+    public void logOut(String token){
+        tokenRevocationService.revokeToken(token);
+    }
+
 }
