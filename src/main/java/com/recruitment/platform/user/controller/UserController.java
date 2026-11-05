@@ -66,5 +66,7 @@ public class UserController {
         String token =authHeader.substring(7).trim();
         userService.logOut(token);
     }
+
+
 }
 
