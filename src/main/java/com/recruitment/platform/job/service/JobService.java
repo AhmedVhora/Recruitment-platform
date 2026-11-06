@@ -14,8 +14,6 @@ import com.recruitment.platform.job.entity.enums.WorkMode;
 import com.recruitment.platform.job.mapper.JobMapper;
 import com.recruitment.platform.job.repository.JobRepository;
 import com.recruitment.platform.job.specification.JobSpecification;
-import com.recruitment.platform.profile.dto.CandidateProfileResponse;
-import com.recruitment.platform.profile.entity.CandidateProfile;
 import com.recruitment.platform.profile.mapper.CandidateProfileMapper;
 import com.recruitment.platform.profile.repository.CandidateProfileRepository;
 import com.recruitment.platform.user.entity.User;
@@ -574,6 +572,34 @@ public class JobService {
     }
 
 
+    @Transactional
+    public void decrementVacancy(Long jobId) {
 
+        // 1. Find job with write lock
+        Job job = jobRepository.findByIdForUpdate(jobId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Job does not exist."
+                ));
+
+        // 2. Verify remaining vacancies
+        if (job.getRemainingVacancies() <= 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "No remaining vacancies for this job."
+            );
+        }
+
+        // 3. Decrement remaining vacancies
+        job.setRemainingVacancies(job.getRemainingVacancies() - 1);
+
+        // 4. Close job if no vacancies remain
+        if (job.getRemainingVacancies() == 0) {
+            job.setStatus(JobStatus.CLOSED);
+        }
+
+        // 5. Save updated job
+        jobRepository.save(job);
+    }
 
 }
