@@ -4,13 +4,13 @@ Local base URL: `http://localhost:8080`
 Swagger UI: `http://localhost:8080/swagger-ui.html`  
 OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 
-All endpoints except registration and login require:
+All business endpoints except registration and login require:
 
 ```http
 Authorization: Bearer <jwt-token>
 ```
 
-All JSON bodies use `Content-Type: application/json`. `PATCH` bodies are partial: only supplied fields are changed. Invalid input returns `400`; a missing resource returns `404`; an ownership or role violation returns `403`; conflicts such as duplicates or protected deletion return `409`.
+Swagger and OpenAPI documentation endpoints are public. All JSON bodies use `Content-Type: application/json`. `PATCH` bodies are partial: only supplied fields are changed. Invalid input returns `400`; a missing resource returns `404`; an ownership or role violation returns `403`; conflicts such as duplicates or protected deletion return `409`.
 
 ## Response shapes
 
@@ -20,14 +20,14 @@ All JSON bodies use `Content-Type: application/json`. `PATCH` bodies are partial
 | `Login` | `{ "token", "tokenType": "Bearer", "user": User }` |
 | `Company` | `{ "id", "name", "description", "industry", "website", "location", "logoUrl", "createdById", "createdAt", "updatedAt" }` |
 | `MembershipRequest` | `{ "id", "companyId", "companyName", "targetRecruiterId", "requestType", "requestStatus", "initiatedById" }` |
-| `Job` | `{ "id", "companyId", "companyName", "createdById", "title", "jobCategory", "description", "responsibilities", "requiredSkills", "qualifications", "minExperience", "employmentType", "workMode", "location", "minSalary", "maxSalary", "totalVacancies", "remainingVacancies", "applicationDeadline", "status", "createdAt", "updatedAt" }` |
+| `Job` | `{ "id", "companyId", "title", "jobCategory", "description", "responsibilities", "requiredSkills", "qualifications", "minExperience", "employmentType", "workMode", "location", "minSalary", "maxSalary", "totalVacancies", "remainingVacancies", "applicationDeadline", "status", "createdAt", "updatedAt" }` |
 | `Application` | `{ "id", "jobId", "jobTitle", "status", "resumeUrl", "appliedAt", "updatedAt" }` |
-| `Profile` | `{ "id", "userId", "headline", "professionalSummary", "location", "yearsOfExperience", "linkedinUrl", "githubUrl", "portfolioUrl", "skills", "resumeUrls", "projects", "certifications", "education", "experiences", "createdAt", "updatedAt" }` |
+| `Profile` | `{ "id", "headline", "professionalSummary", "location", "yearsOfExperience", "linkedinUrl", "githubUrl", "portfolioUrl", "skills", "resumeUrls", "projects", "certifications", "education", "experiences", "createdAt", "updatedAt" }` |
 | `RecruiterInterview` | `{ "id", "applicationId", "roundNumber", "totalRounds", "roundName", "scheduledAt", "durationMinutes", "mode", "meetingLink", "location", "interviewerId", "interviewerName", "status", "outcome", "feedback", "strengths", "areasForImprovement", "feedbackSubmittedAt", "cancellationReason", "cancelledAt", "createdAt", "updatedAt" }` |
 | `CandidateInterview` | `RecruiterInterview` without `feedback`, `strengths`, `areasForImprovement`, or `feedbackSubmittedAt` |
 | `Page<T>` | `{ "content": [T], "totalElements", "totalPages", "size", "number" }` |
 
-`Page<T>` endpoints accept `page` (zero-based), `size` (maximum `100`), and, where supported, `sort`. The default size is `20`; Company endpoints explicitly default to `10`.
+`Page<T>` endpoints accept `page` (zero-based), `size` (maximum `100`), and, where supported, `sort`. General pageable endpoints default to `20`; Company list/search and Job search default to `10`.
 
 ## Candidate side
 
@@ -149,7 +149,7 @@ All JSON bodies use `Content-Type: application/json`. `PATCH` bodies are partial
 | `GET /api/applications/{applicationId}` | none | `200 Application` | Gets an application for a job in the recruiter's company. |
 | `GET /api/jobs/{jobId}/applications?status=&page=&size=` | none | `200 Page<Application>` | Lists applications for an associated job. |
 | `PATCH /api/applications/{applicationId}/status` | `{ "status": "UNDER_REVIEW" | "SHORTLISTED" | "REJECTED" | "HIRED" }` | `200 Application` | Moves an application through valid transitions. `HIRED` atomically decreases vacancies. |
-| `GET /profiles/{candidateId}` | none | `200 Profile` | Gets an authorized candidate profile in the recruitment context. |
+| `GET /profiles/{candidateId}` | none | `200 Profile` | Gets a candidate profile. Under the current implementation, any authenticated recruiter may use this endpoint. |
 
 ### Interviews
 
@@ -165,9 +165,24 @@ All JSON bodies use `Content-Type: application/json`. `PATCH` bodies are partial
 
 ## Important integrity rules
 
-- User deletion is blocked when dependent recruitment records exist.
+- User deletion is blocked by database foreign-key relationships when dependent recruitment records exist; the API returns `409` rather than deleting history.
 - Profile deletion is blocked once a candidate has at least one application. This keeps application and interview history tied to an existing profile.
 - Draft jobs may be deleted; jobs with applications cannot be deleted through the API.
 - Applications with interview history cannot be withdrawn because only `APPLIED` and `UNDER_REVIEW` applications are withdrawable.
 - No Company-delete or Interview-delete endpoint exists.
 - PostgreSQL migration is not part of this project; development uses H2.
+
+## Run locally
+
+Set a Base64-encoded JWT signing secret (at least 32 bytes when decoded), then start the application:
+
+```powershell
+$env:JWT_SECRET = "replace-with-your-base64-secret"
+.\mvnw.cmd spring-boot:run
+```
+
+Run the automated tests with:
+
+```powershell
+.\mvnw.cmd test
+```
