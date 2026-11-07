@@ -496,6 +496,16 @@ public class InterviewService {
 
         // Reactivate a cancelled interview after successful rescheduling.
         if (round.getStatus() == InterviewRoundStatus.CANCELLED) {
+            if (interviewRoundRepository
+                    .existsByInterviewProcessIdAndRoundNumberGreaterThan(
+                            round.getInterviewProcess().getId(),
+                            round.getRoundNumber())) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "A cancelled interview cannot be reopened after a subsequent round exists"
+                );
+            }
+
             round.setStatus(InterviewRoundStatus.SCHEDULED);
             round.setCancelledAt(null);
             round.setCancellationReason(null);

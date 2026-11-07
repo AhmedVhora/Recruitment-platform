@@ -17,6 +17,12 @@ import java.time.LocalDateTime;
                         name = "uk_interview_round_process_number",
                         columnNames = {"interview_process_id", "round_number"}
                 )
+        },
+        indexes = {
+                @Index(
+                        name = "idx_interview_rounds_interviewer",
+                        columnList = "interviewer_id"
+                )
         }
 )
 public class InterviewRound {

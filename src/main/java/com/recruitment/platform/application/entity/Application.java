@@ -15,6 +15,12 @@ import java.time.LocalDateTime;
                         name = "uk_candidate_job_application",
                         columnNames = {"candidate_id", "job_id"}
                 )
+        },
+        indexes = {
+                @Index(
+                        name = "idx_applications_job_status",
+                        columnList = "job_id,status"
+                )
         }
 )
 public class Application {

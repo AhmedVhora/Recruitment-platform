@@ -3,6 +3,7 @@ package com.recruitment.platform.exception;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -60,5 +61,18 @@ public class GlobalExceptionHandler {
         body.put("message", ex.getReason());
 
         return ResponseEntity.status(ex.getStatusCode()).body(body);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataIntegrityViolation(
+            DataIntegrityViolationException ex) {
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("status", 409);
+        body.put("error", "Conflict");
+        body.put("message",
+                "The operation conflicts with existing related records.");
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
 }

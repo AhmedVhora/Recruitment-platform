@@ -1,6 +1,7 @@
 package com.recruitment.platform.profile.service;
 
 import com.recruitment.platform.profile.dto.*;
+import com.recruitment.platform.application.repository.ApplicationRepository;
 import com.recruitment.platform.profile.entity.*;
 import com.recruitment.platform.profile.mapper.CandidateProfileMapper;
 import com.recruitment.platform.profile.repository.*;
@@ -41,6 +42,9 @@ public class CandidateProfileService {
 
     @Autowired
     private CandidateEducationRepository candidateEducationRepository;
+
+    @Autowired
+    private ApplicationRepository applicationRepository;
     // Create Candidate Profile
     @Transactional
     public CandidateProfileResponse createProfile(
@@ -1031,6 +1035,13 @@ public class CandidateProfileService {
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN,
                     "Only candidates can delete their profile."
+            );
+        }
+
+        if (applicationRepository.existsByCandidate_Id(user.getId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Candidate profiles with application history cannot be deleted."
             );
         }
 

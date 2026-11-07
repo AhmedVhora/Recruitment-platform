@@ -21,6 +21,9 @@ public interface InterviewRoundRepository extends JpaRepository<InterviewRound, 
     Optional<InterviewRound> findByInterviewProcessIdAndRoundNumber(
             Long interviewProcessId, Integer roundNumber);
 
+    boolean existsByInterviewProcessIdAndRoundNumberGreaterThan(
+            Long interviewProcessId, Integer roundNumber);
+
     // Candidate: get their interviews
     Page<InterviewRound> findByInterviewProcess_Application_Candidate_Id(
             Long candidateId, Pageable pageable);

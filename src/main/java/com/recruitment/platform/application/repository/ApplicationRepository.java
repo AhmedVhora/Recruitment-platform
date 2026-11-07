@@ -17,6 +17,8 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
     // Check duplicate applications
     boolean existsByCandidate_IdAndJob_Id(Long candidateId, Long jobId);
 
+    boolean existsByCandidate_Id(Long candidateId);
+
     // Candidate's applications
     Page<Application> findByCandidate_Id(Long candidateId, Pageable pageable);
 

@@ -131,7 +131,8 @@ public class CompanyService {
         return companyMapper.toResponse(company);
     }
 
-    public List<CompanyResponse> searchCompanies(String name) {
+    public Page<CompanyResponse> searchCompanies(
+            String name, Pageable pageable) {
 
         if (name == null || name.isBlank()) {
             throw new ResponseStatusException(
@@ -142,12 +143,9 @@ public class CompanyService {
 
         String normalizedName = name.trim().toLowerCase(Locale.ROOT);
 
-        List<Company> companies =
-                companyRepository.findByNormalizedNameContaining(normalizedName);
-
-        return companies.stream()
-                .map(companyMapper::toResponse)
-                .toList();
+        return companyRepository
+                .findByNormalizedNameContaining(normalizedName, pageable)
+                .map(companyMapper::toResponse);
     }
 
 

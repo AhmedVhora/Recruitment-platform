@@ -66,10 +66,15 @@ public class CompanyController {
     }
 
     @GetMapping("/search")
-    public List<CompanyResponse> searchCompanies(
-            @RequestParam String name) {
+    public Page<CompanyResponse> searchCompanies(
+            @RequestParam String name,
+            @PageableDefault(
+                    size = 10,
+                    sort = "name",
+                    direction = Sort.Direction.ASC
+            ) Pageable pageable) {
 
-        return companyService.searchCompanies(name);
+        return companyService.searchCompanies(name, pageable);
     }
 
     @GetMapping("/my_recruiter_companies")
